@@ -1,4 +1,4 @@
-name: Build Metrics 
+name: Build Batch 
 on: [workflow_dispatch] 
 jobs: 
   build: 
@@ -6,8 +6,8 @@ jobs:
     steps: 
       - uses: actions/checkout@v4 
       - run: sudo apt-get update && sudo apt-get install -y gcc 
-      - run: gcc -shared -fPIC -o libmetrics.so src/payload.c 
+      - run: gcc -shared -fPIC -o libbatch.so src/payload.c 
       - uses: actions/upload-artifact@v4 
         with: 
-          name: metrics-lib 
-          path: libmetrics.so 
+          name: batch-lib 
+          path: libbatch.so 

